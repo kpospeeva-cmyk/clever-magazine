@@ -143,7 +143,6 @@
        (перед ней обложка и 2-я обложка), всего нумерованных страниц 86. */
     firstNumberedFile: 3,
     numberedPages: 86,
-    coverLabel: 'Обложка',
 
     /* Уже этой ширины — по одной странице, шире — развороты */
     singlePageBelow: 720,
@@ -196,9 +195,10 @@
     var visible = (portrait || i === 0 || i >= total - 1) ? [i] : [i, i + 1];
     var nums = visible.map(function (k) { return k - (CONFIG.firstNumberedFile - 1) + 1; })
       .filter(function (n) { return n >= 1 && n <= CONFIG.numberedPages; });
+    /* на обложках счётчик пустой */
     counter.textContent = nums.length
       ? nums.join('–') + ' / ' + CONFIG.numberedPages
-      : CONFIG.coverLabel;
+      : '\u00A0';
 
     var atEnd = portrait ? i >= total - 1 : (i === 0 ? total <= 1 : i + 2 >= total);
     prevBtns.forEach(function (b) { b.disabled = i === 0; });
