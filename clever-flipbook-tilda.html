@@ -71,10 +71,25 @@
     overflow: hidden;
     box-shadow: 0 0 0 1px var(--cmf-hair), 0 30px 60px -40px rgba(28, 27, 26, .5);
   }
-  .cmf__page.--left  { border-radius: var(--cmf-radius) 0 0 var(--cmf-radius); }
-  .cmf__page.--right { border-radius: 0 var(--cmf-radius) var(--cmf-radius) 0; }
+  /* в развороте тонкая обводка только по внешним краям — у корешка её нет,
+     чтобы фото на весь разворот не разрезала светлая полоска */
+  .cmf__page.--left {
+    border-radius: var(--cmf-radius) 0 0 var(--cmf-radius);
+    box-shadow: -1px 0 0 var(--cmf-hair), 0 -1px 0 var(--cmf-hair), 0 1px 0 var(--cmf-hair),
+                0 30px 60px -40px rgba(28, 27, 26, .5);
+  }
+  .cmf__page.--right {
+    border-radius: 0 var(--cmf-radius) var(--cmf-radius) 0;
+    box-shadow: 1px 0 0 var(--cmf-hair), 0 -1px 0 var(--cmf-hair), 0 1px 0 var(--cmf-hair),
+                0 30px 60px -40px rgba(28, 27, 26, .5);
+  }
+  /* правая страница заходит на 1px под левую — без щели на корешке */
+  .cmf:not(.is-portrait) .cmf__page.--right img { margin-left: -1px; width: calc(100% + 1px); }
   .cmf.is-closed .cmf__page.--hard,
-  .cmf.is-portrait .cmf__page { border-radius: var(--cmf-radius); }
+  .cmf.is-portrait .cmf__page {
+    border-radius: var(--cmf-radius);
+    box-shadow: 0 0 0 1px var(--cmf-hair), 0 30px 60px -40px rgba(28, 27, 26, .5);
+  }
 
   .cmf__page img {
     display: block;
