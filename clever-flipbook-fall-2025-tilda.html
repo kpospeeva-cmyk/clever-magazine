@@ -1,7 +1,7 @@
 <!-- ============================================================
-     CLEVER MAGAZINE — Special Interview Edition Fall 2025 / Winter 2026 — листающийся журнал для Tilda
-     Вставить целиком в блок T123 «HTML-код».
-     Менять нужно только раздел CONFIG в скрипте ниже.
+     CLEVER MAGAZINE — Special Interview Edition Fall 2025 / Winter 2026 — page-flip magazine for Tilda
+     Paste the whole snippet into a Tilda T123 (HTML code) block.
+     Only the CONFIG section in the script below needs editing.
      ============================================================ -->
 
 <div class="cmf" id="cmf">
@@ -11,7 +11,7 @@
         <div class="cmf__edge cmf__edge--left" id="cmf-edge-l"></div>
         <div class="cmf__edge cmf__edge--right" id="cmf-edge-r"></div>
       </div>
-      <div class="cmf__loader">Загрузка…</div>
+      <div class="cmf__loader">Loading…</div>
     </div>
   </div>
 
@@ -32,13 +32,13 @@
 
 <style>
   .cmf {
-    --cmf-ink: #1C1B1A;            /* текст, кнопки */
-    --cmf-muted: #6A6661;          /* подпись со страницами */
-    --cmf-hair: #E6E3DE;           /* тонкая обводка страниц */
-    --cmf-underline: #BDB8B0;      /* подчёркивание Previous / Next */
-    --cmf-line: #D9D5CE;           /* линия прокрутки */
-    --cmf-bg: #FFFFFF;             /* фон блока */
-    --cmf-page-bg: #FFFFFF;        /* фон страницы, пока грузится картинка */
+    --cmf-ink: #1C1B1A;            /* text, buttons */
+    --cmf-muted: #6A6661;          /* page label */
+    --cmf-hair: #E6E3DE;           /* page hairline */
+    --cmf-underline: #BDB8B0;      /* Previous / Next underline */
+    --cmf-line: #D9D5CE;           /* scrubber line */
+    --cmf-bg: #FFFFFF;             /* block background */
+    --cmf-page-bg: #FFFFFF;        /* page background while the image loads */
     --cmf-radius: 6px;
     width: 100%;
     max-width: 1400px;
@@ -50,15 +50,15 @@
   }
   .cmf *, .cmf *::before, .cmf *::after { box-sizing: border-box; }
 
-  /* ---------- сцена ---------- */
+  /* ---------- stage ---------- */
   .cmf__stage { display: flex; justify-content: center; }
   .cmf__bookwrap {
     position: relative;
     width: 100%;
-    max-width: var(--cmf-maxw, 1200px);   /* считается из JS, чтобы журнал влезал по высоте экрана */
+    max-width: var(--cmf-maxw, 1200px);   /* set from JS so the book fits the viewport height */
     min-height: 200px;
   }
-  /* сдвиг: закрытая обложка — по центру */
+  /* shift: closed cover is centred */
   .cmf__shift {
     position: relative;
     transform: translateX(var(--cmf-shift, 0%));
@@ -67,14 +67,14 @@
   }
   .cmf__book { width: 100% !important; min-width: 0 !important; min-height: 0 !important; }
 
-  /* ---------- страницы ---------- */
+  /* ---------- pages ---------- */
   .cmf__page {
     background: var(--cmf-page-bg);
     overflow: hidden;
     box-shadow: 0 0 0 1px var(--cmf-hair), 0 30px 60px -40px rgba(28, 27, 26, .5);
   }
-  /* в развороте тонкая обводка только по внешним краям — у корешка её нет,
-     чтобы фото на весь разворот не разрезала светлая полоска */
+  /* in a spread the hairline runs along the outer edges only — none at the spine,
+     so a full-spread photo is not cut by a light line */
   .cmf__page.--left {
     border-radius: var(--cmf-radius) 0 0 var(--cmf-radius);
     box-shadow: -1px 0 0 var(--cmf-hair), 0 -1px 0 var(--cmf-hair), 0 1px 0 var(--cmf-hair),
@@ -85,7 +85,7 @@
     box-shadow: 1px 0 0 var(--cmf-hair), 0 -1px 0 var(--cmf-hair), 0 1px 0 var(--cmf-hair),
                 0 30px 60px -40px rgba(28, 27, 26, .5);
   }
-  /* правая страница заходит на 1px под левую — без щели на корешке */
+  /* right page overlaps the left by 1px — no gap at the spine */
   .cmf:not(.is-portrait) .cmf__page.--right img { margin-left: -1px; width: calc(100% + 1px); }
   .cmf.is-closed .cmf__page.--hard,
   .cmf.is-portrait .cmf__page {
@@ -103,7 +103,7 @@
   }
   .cmf__page img.is-loaded { opacity: 1; }
 
-  /* мягкая тень у корешка */
+  /* soft spine shadow */
   .cmf__page::after {
     content: "";
     position: absolute; inset: 0;
@@ -116,7 +116,7 @@
   .cmf__page.--hard.--left::after  { background: linear-gradient(to left,  rgba(28,27,26,.06), rgba(28,27,26,0) 3%); }
   .cmf.is-portrait .cmf__page::after { background: none; }
 
-  /* ---------- толщина книжки ---------- */
+  /* ---------- page-stack edges ---------- */
   .cmf__edge {
     position: absolute;
     top: 2px; bottom: 2px;
@@ -139,7 +139,7 @@
   }
   .cmf.is-ready .cmf__loader { display: none; }
 
-  /* ---------- управление ---------- */
+  /* ---------- controls ---------- */
   .cmf__ctl {
     display: flex; align-items: center; justify-content: space-between;
     gap: 16px;
@@ -182,7 +182,7 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* тонкая линия прокрутки */
+  /* thin scrubber */
   .cmf__range {
     -webkit-appearance: none; appearance: none;
     display: block;
@@ -209,7 +209,7 @@
 
   @media (prefers-reduced-motion: reduce) { .cmf__shift { transition: none; } }
 
-  /* ---------- телефоны ---------- */
+  /* ---------- phones ---------- */
   @media (max-width: 720px) {
     .cmf { padding: 24px 14px 20px; }
     .cmf__ctl { flex-wrap: wrap; justify-content: center; margin-top: 18px; gap: 4px 32px; }
@@ -222,28 +222,28 @@
 (function () {
   /* ============================ CONFIG ============================ */
   var CONFIG = {
-    /* Папка с картинками (со слешем в конце). Файлы: page-001.webp … page-138.webp */
+    /* Image folder (with trailing slash). Files: page-001.webp … page-138.webp */
     baseUrl: 'https://cdn.jsdelivr.net/gh/kpospeeva-cmyk/clever-magazine@6edf09e1853da33706ab626c6a0ac16f99643d9e/clever-fall-2025/',
     pageCount: 138,
     fileName: function (n) { return 'page-' + String(n).padStart(3, '0') + '.webp'; },
 
-    /* ИЛИ полный список ссылок по порядку. Если список не пустой — используется он. */
+    /* OR a full list of image URLs in order. If not empty, it is used instead. */
     pages: [],
 
-    /* Пропорции страницы: A4 */
+    /* Page proportions: A4 */
     pageWidth: 1240,
     pageHeight: 1754,
 
-    /* Нумерация в подписи — как в журнале: файл page-003 = стр. 1, всего 134 стр.
-       На обложках подпись пустая. */
+    /* Label numbering follows the print issue: file page-003 = page 1, 134 pages in total.
+       The label is empty on the covers. */
     firstNumberedFile: 3,
     numberedPages: 134,
 
-    /* Уже этой ширины — по одной странице, шире — развороты */
+    /* Below this width: single pages; wider: spreads */
     singlePageBelow: 720,
 
-    maxEdge: 10,       /* максимальная толщина книжки по краю, px */
-    flipTime: 800      /* скорость перелистывания, мс */
+    maxEdge: 10,       /* max page-stack edge thickness, px */
+    flipTime: 800      /* flip duration, ms */
   };
   /* ================================================================ */
 
@@ -269,20 +269,20 @@
 
   function isSingle() { return root.clientWidth <= CONFIG.singlePageBelow; }
 
-  /* Ограничиваем ширину, чтобы журнал целиком помещался по высоте окна */
+  /* Limit the width so the whole book fits the window height */
   function fitToViewport() {
-    var reserve = isSingle() ? 200 : 230;   /* место под подписи и кнопки */
+    var reserve = isSingle() ? 200 : 230;   /* room for the label and buttons */
     var h = Math.max(window.innerHeight - reserve, 320);
     root.style.setProperty('--cmf-maxw', Math.round(h * ratio * (isSingle() ? 1 : 2)) + 'px');
   }
 
-  /* В развороте: какие страницы видны при индексе i */
+  /* Which pages are visible at index i */
   function visibleFor(i) {
     if (single || i === 0 || i >= total - 1) return [i];
     return [i, i + 1];
   }
 
-  /* Закрытая обложка — по центру, задняя обложка — тоже по центру */
+  /* Closed front cover is centred, and so is the back cover */
   function applyShift(i) {
     var s = 0;
     if (!single) {
@@ -293,7 +293,7 @@
     root.classList.toggle('is-closed', s !== 0);
   }
 
-  /* Толщина книжки: слева — прочитанные страницы, справа — оставшиеся */
+  /* Page-stack edges: read pages on the left, remaining pages on the right */
   function applyEdges(i) {
     if (single) return;
     var vis = visibleFor(i);
@@ -302,19 +302,19 @@
     var k = CONFIG.maxEdge / Math.max(total - 1, 1);
     edgeL.style.width = Math.round(leftCount * k) + 'px';
     edgeR.style.width = Math.round(rightCount * k) + 'px';
-    /* на закрытой обложке толщина видна справа от обложки, слева — пусто */
+    /* on the closed cover the stack shows to the right of the cover, nothing on the left */
     edgeL.style.right = (i === 0) ? '50%' : '100%';
     edgeR.style.left = (i >= total - 1 && total % 2 === 0) ? '50%' : '100%';
   }
 
-  /* Куда приведёт шаг вперёд/назад — чтобы сдвиг начинался вместе с перелистыванием */
+  /* Where a step forward/back lands — so the shift starts together with the flip */
   function targetFor(i, dir) {
     if (single) return Math.min(Math.max(i + dir, 0), total - 1);
     if (dir > 0) return i === 0 ? 1 : Math.min(i + 2, total - 1);
     return i <= 2 ? 0 : i - 2;
   }
 
-  /* Подгружаем только страницы рядом с текущей */
+  /* Load only the pages near the current one */
   function loadAround(i) {
     for (var k = Math.max(0, i - 3); k <= Math.min(pageEls.length - 1, i + 6); k++) {
       var img = pageEls[k].firstChild;
@@ -326,13 +326,13 @@
     var nums = visibleFor(i)
       .map(function (k) { return k - (CONFIG.firstNumberedFile - 1) + 1; })
       .filter(function (n) { return n >= 1 && n <= CONFIG.numberedPages; });
-    if (!nums.length) return '\u00A0';   /* на обложках подпись пустая */
+    if (!nums.length) return '\u00A0';   /* empty label on the covers */
     return (nums.length > 1 ? 'Pages ' : 'Page ') + nums.join('–') + ' of ' + CONFIG.numberedPages;
   }
 
   function updateUI(e) {
     if (!flip) return;
-    /* во время события flip getCurrentPageIndex() иногда ещё старый — берём номер из события */
+    /* during the flip event getCurrentPageIndex() can still be stale — take the index from the event */
     var i = (e && typeof e.data === 'number') ? e.data : flip.getCurrentPageIndex();
     current = i;
 
@@ -352,7 +352,7 @@
     if (!flip) return;
     var t = targetFor(current, dir);
     if (t === current) return;
-    applyShift(t);            /* сдвиг стартует одновременно с анимацией */
+    applyShift(t);            /* shift starts together with the animation */
     loadAround(t);
     if (dir > 0) flip.flipNext(); else flip.flipPrev();
   }
@@ -372,7 +372,7 @@
     pageEls = urls.map(function (src, idx) {
       var p = document.createElement('div');
       p.className = 'cmf__page';
-      if (idx === 0 || idx === total - 1) p.setAttribute('data-density', 'hard'); /* обложки плотные */
+      if (idx === 0 || idx === total - 1) p.setAttribute('data-density', 'hard'); /* covers are hard */
       var img = document.createElement('img');
       img.alt = '';
       img.decoding = 'async';
@@ -391,7 +391,7 @@
       width: CONFIG.pageWidth,
       height: CONFIG.pageHeight,
       size: 'stretch',
-      /* режим (страница/разворот) решаем сами по ширине контейнера */
+      /* single page vs spread is decided here from the container width */
       minWidth: single ? 100000 : 1,
       maxWidth: single ? 100000 : 3000,
       minHeight: 1,
@@ -410,22 +410,22 @@
     flip.loadFromHTML(pageEls);
   }
 
-  /* ---------- управление ---------- */
+  /* ---------- controls ---------- */
   prevBtns.forEach(function (b) { b.addEventListener('click', function () { go(-1); }); });
   nextBtns.forEach(function (b) { b.addEventListener('click', function () { go(1); }); });
 
   document.addEventListener('keydown', function (e) {
     if (!flip) return;
     var r = root.getBoundingClientRect();
-    if (r.bottom < 0 || r.top > window.innerHeight) return; /* журнал не на экране */
+    if (r.bottom < 0 || r.top > window.innerHeight) return; /* book is off-screen */
     if (e.key === 'ArrowRight') go(1);
     if (e.key === 'ArrowLeft') go(-1);
   });
 
-  /* ползунок: пока тянешь — меняется номер, отпустил — переход на страницу */
+  /* scrubber: dragging updates the label, releasing jumps to the page */
   function rangeTarget() {
     var v = parseInt(range.value, 10);
-    if (!single && v > 0 && v < total - 1 && v % 2 === 0) v -= 1; /* развороты начинаются с нечётного индекса */
+    if (!single && v > 0 && v < total - 1 && v % 2 === 0) v -= 1; /* spreads start at an odd index */
     return v;
   }
   range.addEventListener('input', function () {
@@ -445,7 +445,7 @@
     t = setTimeout(function () {
       if (!flip) return;
       fitToViewport();
-      if (isSingle() !== single) build();   /* перевернули планшет и т.п. */
+      if (isSingle() !== single) build();   /* e.g. a tablet was rotated */
       else { flip.update(); updateUI(); }
     }, 150);
   });
