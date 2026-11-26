@@ -1,0 +1,465 @@
+<!-- ============================================================
+     CLEVER MAGAZINE — Special Interview Edition Fall 2025 / Winter 2026 — листающийся журнал для Tilda
+     Вставить целиком в блок T123 «HTML-код».
+     Менять нужно только раздел CONFIG в скрипте ниже.
+     ============================================================ -->
+
+<div class="cmf" id="cmf">
+  <div class="cmf__stage">
+    <div class="cmf__bookwrap" id="cmf-wrap">
+      <div class="cmf__shift" id="cmf-shift">
+        <div class="cmf__edge cmf__edge--left" id="cmf-edge-l"></div>
+        <div class="cmf__edge cmf__edge--right" id="cmf-edge-r"></div>
+      </div>
+      <div class="cmf__loader">Загрузка…</div>
+    </div>
+  </div>
+
+  <div class="cmf__ctl">
+    <button class="cmf__btn cmf__arrow--prev" type="button">
+      <svg viewBox="0 0 12 12" aria-hidden="true" style="transform:scaleX(-1)"><path d="M1.5 6h8.5M6.5 2.5 10 6l-3.5 3.5"/></svg>
+      <span>Previous</span>
+    </button>
+    <span class="cmf__counter" id="cmf-counter" aria-live="polite">&nbsp;</span>
+    <button class="cmf__btn cmf__arrow--next" type="button">
+      <span>Next</span>
+      <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6h8.5M6.5 2.5 10 6l-3.5 3.5"/></svg>
+    </button>
+  </div>
+
+  <input class="cmf__range" id="cmf-range" type="range" min="0" max="1" step="1" value="0" aria-label="Go to page">
+</div>
+
+<style>
+  .cmf {
+    --cmf-ink: #1C1B1A;            /* текст, кнопки */
+    --cmf-muted: #6A6661;          /* подпись со страницами */
+    --cmf-hair: #E6E3DE;           /* тонкая обводка страниц */
+    --cmf-underline: #BDB8B0;      /* подчёркивание Previous / Next */
+    --cmf-line: #D9D5CE;           /* линия прокрутки */
+    --cmf-bg: #FFFFFF;             /* фон блока */
+    --cmf-page-bg: #FFFFFF;        /* фон страницы, пока грузится картинка */
+    --cmf-radius: 6px;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 48px 24px 32px;
+    box-sizing: border-box;
+    font-family: inherit;
+    background: var(--cmf-bg);
+  }
+  .cmf *, .cmf *::before, .cmf *::after { box-sizing: border-box; }
+
+  /* ---------- сцена ---------- */
+  .cmf__stage { display: flex; justify-content: center; }
+  .cmf__bookwrap {
+    position: relative;
+    width: 100%;
+    max-width: var(--cmf-maxw, 1200px);   /* считается из JS, чтобы журнал влезал по высоте экрана */
+    min-height: 200px;
+  }
+  /* сдвиг: закрытая обложка — по центру */
+  .cmf__shift {
+    position: relative;
+    transform: translateX(var(--cmf-shift, 0%));
+    transition: transform 700ms cubic-bezier(.3, .7, .2, 1);
+    will-change: transform;
+  }
+  .cmf__book { width: 100% !important; min-width: 0 !important; min-height: 0 !important; }
+
+  /* ---------- страницы ---------- */
+  .cmf__page {
+    background: var(--cmf-page-bg);
+    overflow: hidden;
+    box-shadow: 0 0 0 1px var(--cmf-hair), 0 30px 60px -40px rgba(28, 27, 26, .5);
+  }
+  /* в развороте тонкая обводка только по внешним краям — у корешка её нет,
+     чтобы фото на весь разворот не разрезала светлая полоска */
+  .cmf__page.--left {
+    border-radius: var(--cmf-radius) 0 0 var(--cmf-radius);
+    box-shadow: -1px 0 0 var(--cmf-hair), 0 -1px 0 var(--cmf-hair), 0 1px 0 var(--cmf-hair),
+                0 30px 60px -40px rgba(28, 27, 26, .5);
+  }
+  .cmf__page.--right {
+    border-radius: 0 var(--cmf-radius) var(--cmf-radius) 0;
+    box-shadow: 1px 0 0 var(--cmf-hair), 0 -1px 0 var(--cmf-hair), 0 1px 0 var(--cmf-hair),
+                0 30px 60px -40px rgba(28, 27, 26, .5);
+  }
+  /* правая страница заходит на 1px под левую — без щели на корешке */
+  .cmf:not(.is-portrait) .cmf__page.--right img { margin-left: -1px; width: calc(100% + 1px); }
+  .cmf.is-closed .cmf__page.--hard,
+  .cmf.is-portrait .cmf__page {
+    border-radius: var(--cmf-radius);
+    box-shadow: 0 0 0 1px var(--cmf-hair), 0 30px 60px -40px rgba(28, 27, 26, .5);
+  }
+
+  .cmf__page img {
+    display: block;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    user-select: none; -webkit-user-drag: none;
+    pointer-events: none;
+    opacity: 0; transition: opacity .3s;
+  }
+  .cmf__page img.is-loaded { opacity: 1; }
+
+  /* мягкая тень у корешка */
+  .cmf__page::after {
+    content: "";
+    position: absolute; inset: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .cmf__page.--left::after  { background: linear-gradient(to left,  rgba(28,27,26,.12), rgba(28,27,26,0) 7%); }
+  .cmf__page.--right::after { background: linear-gradient(to right, rgba(28,27,26,.12), rgba(28,27,26,0) 7%); }
+  .cmf__page.--hard.--right::after { background: linear-gradient(to right, rgba(28,27,26,.06), rgba(28,27,26,0) 3%); }
+  .cmf__page.--hard.--left::after  { background: linear-gradient(to left,  rgba(28,27,26,.06), rgba(28,27,26,0) 3%); }
+  .cmf.is-portrait .cmf__page::after { background: none; }
+
+  /* ---------- толщина книжки ---------- */
+  .cmf__edge {
+    position: absolute;
+    top: 2px; bottom: 2px;
+    width: 0;
+    z-index: 0;
+    pointer-events: none;
+    transition: width .4s ease;
+    background: repeating-linear-gradient(to right, #FFFFFF 0 1px, #E3DFD8 1px 2px);
+    box-shadow: 0 0 0 1px var(--cmf-hair), 0 30px 60px -40px rgba(28, 27, 26, .5);
+  }
+  .cmf__edge--left  { right: 100%; border-radius: var(--cmf-radius) 0 0 var(--cmf-radius); }
+  .cmf__edge--right { left: 100%;  border-radius: 0 var(--cmf-radius) var(--cmf-radius) 0; }
+  .cmf.is-portrait .cmf__edge { display: none; }
+
+  .cmf__loader {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--cmf-muted);
+    pointer-events: none;
+  }
+  .cmf.is-ready .cmf__loader { display: none; }
+
+  /* ---------- управление ---------- */
+  .cmf__ctl {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    max-width: var(--cmf-maxw, 1200px);
+    margin: 28px auto 0;
+  }
+  .cmf__btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    height: 44px; padding: 0 6px;
+    background: none; border: 0; cursor: pointer;
+    font: inherit; font-size: 16px; line-height: 1;
+    color: var(--cmf-ink);
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cmf__btn span {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 1px;
+    text-decoration-color: var(--cmf-underline);
+    transition: text-decoration-color 150ms ease-out;
+  }
+  .cmf__btn svg {
+    width: 12px; height: 12px; flex: none;
+    fill: none; stroke: currentColor; stroke-width: 1.5;
+    stroke-linecap: round; stroke-linejoin: round;
+    transition: transform 150ms ease-out;
+  }
+  .cmf__btn:hover span { text-decoration-color: currentColor; }
+  .cmf__arrow--next:hover svg { transform: translateX(3px); }
+  .cmf__arrow--prev:hover svg { transform: scaleX(-1) translateX(3px) !important; }
+  .cmf__btn:active { transform: scale(.985); }
+  .cmf__btn:disabled { opacity: .35; cursor: default; pointer-events: none; }
+
+  .cmf__counter {
+    font-size: 14px; line-height: 20px;
+    color: var(--cmf-muted);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* тонкая линия прокрутки */
+  .cmf__range {
+    -webkit-appearance: none; appearance: none;
+    display: block;
+    width: 100%;
+    max-width: var(--cmf-maxw, 1200px);
+    height: 20px;
+    margin: 10px auto 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .cmf__range:focus { outline: none; }
+  .cmf__range::-webkit-slider-runnable-track { height: 1px; background: var(--cmf-line); }
+  .cmf__range::-moz-range-track { height: 1px; background: var(--cmf-line); }
+  .cmf__range::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 9px; height: 9px; margin-top: -4px;
+    border-radius: 50%; border: 0;
+    background: var(--cmf-ink);
+    transition: transform .15s;
+  }
+  .cmf__range::-moz-range-thumb { width: 9px; height: 9px; border-radius: 50%; border: 0; background: var(--cmf-ink); }
+  .cmf__range:hover::-webkit-slider-thumb,
+  .cmf__range:active::-webkit-slider-thumb { transform: scale(1.35); }
+
+  @media (prefers-reduced-motion: reduce) { .cmf__shift { transition: none; } }
+
+  /* ---------- телефоны ---------- */
+  @media (max-width: 720px) {
+    .cmf { padding: 24px 14px 20px; }
+    .cmf__ctl { flex-wrap: wrap; justify-content: center; margin-top: 18px; gap: 4px 32px; }
+    .cmf__counter { order: -1; width: 100%; }
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+<script>
+(function () {
+  /* ============================ CONFIG ============================ */
+  var CONFIG = {
+    /* Папка с картинками (со слешем в конце). Файлы: page-001.webp … page-138.webp */
+    baseUrl: 'https://cdn.jsdelivr.net/gh/kpospeeva-cmyk/clever-magazine@6edf09e1853da33706ab626c6a0ac16f99643d9e/clever-fall-2025/',
+    pageCount: 138,
+    fileName: function (n) { return 'page-' + String(n).padStart(3, '0') + '.webp'; },
+
+    /* ИЛИ полный список ссылок по порядку. Если список не пустой — используется он. */
+    pages: [],
+
+    /* Пропорции страницы: A4 */
+    pageWidth: 1240,
+    pageHeight: 1754,
+
+    /* Нумерация в подписи — как в журнале: файл page-003 = стр. 1, всего 134 стр.
+       На обложках подпись пустая. */
+    firstNumberedFile: 3,
+    numberedPages: 134,
+
+    /* Уже этой ширины — по одной странице, шире — развороты */
+    singlePageBelow: 720,
+
+    maxEdge: 10,       /* максимальная толщина книжки по краю, px */
+    flipTime: 800      /* скорость перелистывания, мс */
+  };
+  /* ================================================================ */
+
+  var root = document.getElementById('cmf');
+  var wrap = document.getElementById('cmf-wrap');
+  var shift = document.getElementById('cmf-shift');
+  var edgeL = document.getElementById('cmf-edge-l');
+  var edgeR = document.getElementById('cmf-edge-r');
+  var counter = document.getElementById('cmf-counter');
+  var range = document.getElementById('cmf-range');
+  var prevBtns = root.querySelectorAll('.cmf__arrow--prev');
+  var nextBtns = root.querySelectorAll('.cmf__arrow--next');
+  var ratio = CONFIG.pageWidth / CONFIG.pageHeight;
+
+  var urls = CONFIG.pages.length ? CONFIG.pages : (function () {
+    var a = [];
+    for (var n = 1; n <= CONFIG.pageCount; n++) a.push(CONFIG.baseUrl + CONFIG.fileName(n));
+    return a;
+  })();
+  var total = urls.length;
+
+  var flip = null, single = null, current = 0, pageEls = [];
+
+  function isSingle() { return root.clientWidth <= CONFIG.singlePageBelow; }
+
+  /* Ограничиваем ширину, чтобы журнал целиком помещался по высоте окна */
+  function fitToViewport() {
+    var reserve = isSingle() ? 200 : 230;   /* место под подписи и кнопки */
+    var h = Math.max(window.innerHeight - reserve, 320);
+    root.style.setProperty('--cmf-maxw', Math.round(h * ratio * (isSingle() ? 1 : 2)) + 'px');
+  }
+
+  /* В развороте: какие страницы видны при индексе i */
+  function visibleFor(i) {
+    if (single || i === 0 || i >= total - 1) return [i];
+    return [i, i + 1];
+  }
+
+  /* Закрытая обложка — по центру, задняя обложка — тоже по центру */
+  function applyShift(i) {
+    var s = 0;
+    if (!single) {
+      if (i === 0) s = -25;
+      else if (i >= total - 1 && total % 2 === 0) s = 25;
+    }
+    shift.style.setProperty('--cmf-shift', s + '%');
+    root.classList.toggle('is-closed', s !== 0);
+  }
+
+  /* Толщина книжки: слева — прочитанные страницы, справа — оставшиеся */
+  function applyEdges(i) {
+    if (single) return;
+    var vis = visibleFor(i);
+    var leftCount = vis[0];
+    var rightCount = total - 1 - vis[vis.length - 1];
+    var k = CONFIG.maxEdge / Math.max(total - 1, 1);
+    edgeL.style.width = Math.round(leftCount * k) + 'px';
+    edgeR.style.width = Math.round(rightCount * k) + 'px';
+    /* на закрытой обложке толщина видна справа от обложки, слева — пусто */
+    edgeL.style.right = (i === 0) ? '50%' : '100%';
+    edgeR.style.left = (i >= total - 1 && total % 2 === 0) ? '50%' : '100%';
+  }
+
+  /* Куда приведёт шаг вперёд/назад — чтобы сдвиг начинался вместе с перелистыванием */
+  function targetFor(i, dir) {
+    if (single) return Math.min(Math.max(i + dir, 0), total - 1);
+    if (dir > 0) return i === 0 ? 1 : Math.min(i + 2, total - 1);
+    return i <= 2 ? 0 : i - 2;
+  }
+
+  /* Подгружаем только страницы рядом с текущей */
+  function loadAround(i) {
+    for (var k = Math.max(0, i - 3); k <= Math.min(pageEls.length - 1, i + 6); k++) {
+      var img = pageEls[k].firstChild;
+      if (!img.getAttribute('src')) img.setAttribute('src', img.getAttribute('data-src'));
+    }
+  }
+
+  function labelFor(i) {
+    var nums = visibleFor(i)
+      .map(function (k) { return k - (CONFIG.firstNumberedFile - 1) + 1; })
+      .filter(function (n) { return n >= 1 && n <= CONFIG.numberedPages; });
+    if (!nums.length) return '\u00A0';   /* на обложках подпись пустая */
+    return (nums.length > 1 ? 'Pages ' : 'Page ') + nums.join('–') + ' of ' + CONFIG.numberedPages;
+  }
+
+  function updateUI(e) {
+    if (!flip) return;
+    /* во время события flip getCurrentPageIndex() иногда ещё старый — берём номер из события */
+    var i = (e && typeof e.data === 'number') ? e.data : flip.getCurrentPageIndex();
+    current = i;
+
+    counter.textContent = labelFor(i);
+    if (!range.matches(':active')) range.value = i;
+
+    var atEnd = single ? i >= total - 1 : (i === 0 ? total <= 1 : i + 2 >= total);
+    prevBtns.forEach(function (b) { b.disabled = i === 0; });
+    nextBtns.forEach(function (b) { b.disabled = atEnd; });
+
+    applyShift(i);
+    applyEdges(i);
+    loadAround(i);
+  }
+
+  function go(dir) {
+    if (!flip) return;
+    var t = targetFor(current, dir);
+    if (t === current) return;
+    applyShift(t);            /* сдвиг стартует одновременно с анимацией */
+    loadAround(t);
+    if (dir > 0) flip.flipNext(); else flip.flipPrev();
+  }
+
+  function build() {
+    if (typeof St === 'undefined') return;
+    single = isSingle();
+    root.classList.toggle('is-portrait', single);
+    fitToViewport();
+
+    if (flip) { try { flip.destroy(); } catch (e) {} flip = null; }
+
+    var book = document.createElement('div');
+    book.className = 'cmf__book';
+    shift.appendChild(book);
+
+    pageEls = urls.map(function (src, idx) {
+      var p = document.createElement('div');
+      p.className = 'cmf__page';
+      if (idx === 0 || idx === total - 1) p.setAttribute('data-density', 'hard'); /* обложки плотные */
+      var img = document.createElement('img');
+      img.alt = '';
+      img.decoding = 'async';
+      img.setAttribute('data-src', src);
+      img.onload = function () { img.classList.add('is-loaded'); };
+      p.appendChild(img);
+      book.appendChild(p);
+      return p;
+    });
+    loadAround(current);
+
+    range.max = total - 1;
+    range.step = 1;
+
+    flip = new St.PageFlip(book, {
+      width: CONFIG.pageWidth,
+      height: CONFIG.pageHeight,
+      size: 'stretch',
+      /* режим (страница/разворот) решаем сами по ширине контейнера */
+      minWidth: single ? 100000 : 1,
+      maxWidth: single ? 100000 : 3000,
+      minHeight: 1,
+      maxHeight: 5000,
+      autoSize: true,
+      usePortrait: true,
+      showCover: true,
+      mobileScrollSupport: true,
+      flippingTime: CONFIG.flipTime,
+      maxShadowOpacity: 0.5,
+      startPage: current
+    });
+
+    flip.on('init', function () { root.classList.add('is-ready'); updateUI(); });
+    flip.on('flip', updateUI);
+    flip.loadFromHTML(pageEls);
+  }
+
+  /* ---------- управление ---------- */
+  prevBtns.forEach(function (b) { b.addEventListener('click', function () { go(-1); }); });
+  nextBtns.forEach(function (b) { b.addEventListener('click', function () { go(1); }); });
+
+  document.addEventListener('keydown', function (e) {
+    if (!flip) return;
+    var r = root.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > window.innerHeight) return; /* журнал не на экране */
+    if (e.key === 'ArrowRight') go(1);
+    if (e.key === 'ArrowLeft') go(-1);
+  });
+
+  /* ползунок: пока тянешь — меняется номер, отпустил — переход на страницу */
+  function rangeTarget() {
+    var v = parseInt(range.value, 10);
+    if (!single && v > 0 && v < total - 1 && v % 2 === 0) v -= 1; /* развороты начинаются с нечётного индекса */
+    return v;
+  }
+  range.addEventListener('input', function () {
+    counter.textContent = labelFor(rangeTarget());
+  });
+  range.addEventListener('change', function () {
+    if (!flip) return;
+    var v = rangeTarget();
+    loadAround(v);
+    flip.turnToPage(v);
+    updateUI({ data: v });
+  });
+
+  var t;
+  window.addEventListener('resize', function () {
+    clearTimeout(t);
+    t = setTimeout(function () {
+      if (!flip) return;
+      fitToViewport();
+      if (isSingle() !== single) build();   /* перевернули планшет и т.п. */
+      else { flip.update(); updateUI(); }
+    }, 150);
+  });
+
+  function start() {
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (en) {
+        if (en[0].isIntersecting) { io.disconnect(); build(); }
+      }, { rootMargin: '600px 0px' });
+      io.observe(root);
+    } else build();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+</script>
